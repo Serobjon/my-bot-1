@@ -37,3 +37,8 @@ def echo(message):
     bot.send_message(message.chat.id, message.text)
 
 bot.infinity_polling(skip_pending=True)
+import os
+
+port = os.environ.get("PORT")
+if port:
+    bot.infinity_polling(skip_pending=True)
