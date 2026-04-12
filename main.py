@@ -36,4 +36,4 @@ def start(message):
 def echo(message):
     bot.send_message(message.chat.id, message.text)
 
-bot.polling()
+bot.infinity_polling(skip_pending=True)
