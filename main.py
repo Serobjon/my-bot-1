@@ -1,3 +1,27 @@
+import requests
+import os
+
+def ai_reply(text):
+    try:
+        key = os.getenv("AI_KEY")
+
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json"
+        }
+
+        data = {
+            "model": "openai/gpt-3.5-turbo",
+            "messages": [{"role": "user", "content": text}]
+        }
+
+        r = requests.post(url, json=data, headers=headers, timeout=20)
+
+        return r.json()["choices"][0]["message"]["content"]
+
+    except:
+        return "AI ishlamadi 😔"
 import os
 import telebot
 
