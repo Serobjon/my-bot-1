@@ -12,19 +12,20 @@ x = symbols('x')
 def start(message):
     bot.send_message(
         message.chat.id,
-        "🧮 Math Bot\n\n"
+        "🧮 Math Bot ishga tushdi!\n\n"
         "Misollar:\n"
+        "2+2\n"
         "x+5=10\n"
         "x^2+5*x+6=0\n"
-        "2+2"
+        "x*(5+6)-x*(3+2)=20"
     )
 
-# ---------------- SOLVER ----------------
-def solve_all(text):
+# ---------------- MATH ENGINE ----------------
+def solve_math(text):
     try:
         text = text.replace("^", "**")
 
-        # 1️⃣ EQUATION (oddiy + kvadrat ham)
+        # 1️⃣ EQUATION (oddiy + kvadrat + murakkab)
         if "=" in text:
             left, right = text.split("=")
             eq = Eq(sympify(left), sympify(right))
@@ -35,12 +36,12 @@ def solve_all(text):
         return f"🧮 {sympify(text)}"
 
     except:
-        return "❌ Xato misol"
+        return "❌ Noto‘g‘ri misol"
 
 # ---------------- HANDLE ----------------
-@bot.message_handler(func=lambda m: True)
+@bot.message_handler(func=lambda message: True)
 def handle(message):
-    result = solve_all(message.text)
+    result = solve_math(message.text)
     bot.send_message(message.chat.id, result)
 
 bot.infinity_polling(skip_pending=True)
