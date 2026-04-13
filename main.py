@@ -1,35 +1,33 @@
 import os
 import telebot
+import requests
 import re
+import base64
 
 TOKEN = os.getenv("TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
-# ---------------- BASIC MATH ----------------
-def safe_eval(expr):
+# ---------------- MATH ----------------
+def calc(text):
     try:
-        expr = expr.replace("^", "**")
+        text = text.replace("^", "**")
         allowed = "0123456789+-*/(). x="
-        if not all(c in allowed for c in expr):
+        if not all(c in allowed for c in text):
             return None
-        return eval(expr)
+        return eval(text)
     except:
         return None
 
-# ---------------- EQUATION SOLVER ----------------
-def solve_equation(text):
+# ---------------- EQUATION ----------------
+def solve_eq(text):
     try:
-        # example: x + 5 = 10
         if "=" not in text:
             return None
 
         left, right = text.split("=")
-        left = left.strip()
-        right = float(eval(right))
+        right = float(eval(right.strip()))
 
-        # simple form: ax + b
-        match = re.match(r"([0-9]*)x\s*([\+\-]?\s*\d+)?", left)
-
+        match = re.match(r"([0-9]*)x\s*([\+\-]?\s*\d+)?", left.strip())
         if match:
             a = match.group(1)
             b = match.group(2)
@@ -39,38 +37,81 @@ def solve_equation(text):
 
             x = (right - b) / a
             return f"x = {x}"
-
     except:
         return None
 
-# ---------------- AI / LOGIC ----------------
-def reply(text):
+# ---------------- FREE AI ----------------
+def ai(text):
+    try:
+        r = requests.get(
+            "https://api.affiliateplus.xyz/api/chatbot",
+            params={"message": text},
+            timeout=5
+        )
+        if r.status_code == 200:
+            return r.json().get("message", "")
+    except:
+        pass
 
-    # 1️⃣ equation
-    eq = solve_equation(text)
-    if eq:
-        return "🧠 " + eq
+    return "🤖 Men sizni tushundim, lekin AI hozir band."
 
-    # 2️⃣ normal math
-    math = safe_eval(text)
-    if math is not None:
-        return "🧮 " + str(math)
+# ---------------- IMAGE ANALYSIS ----------------
+def analyze_image(file_path):
+    try:
+        with open(file_path, "rb") as img:
+            b64 = base64.b64encode(img.read()).decode()
 
-    # 3️⃣ fallback
-    return "🤖 Men faqat matematikani yecha olaman. Misol: 2+2 yoki x+5=10"
+        # FREE demo vision API (not perfect but works)
+        r = requests.post(
+            "https://api.deepai.org/api/vision",
+            data={"image": "data:image/jpeg;base64," + b64},
+            timeout=10
+        )
+
+        if r.status_code == 200:
+            return r.json().get("output", "Rasm tahlil qilindi")
+    except:
+        pass
+
+    return "🖼 Rasmni tahlil qilib bo‘lmadi"
 
 # ---------------- START ----------------
 @bot.message_handler(commands=['start'])
 def start(m):
-    bot.send_message(m.chat.id,
-        "🤖 Math Bot ishga tushdi!\n\n"
-        "🧮 Misollar: 2+2, 10/2\n"
-        "🧠 Tenglama: x+5=10"
+    bot.send_message(
+        m.chat.id,
+        "🚀 MAX BOT ishga tushdi!\n\n🧮 Math\n🧠 AI\n🖼 Image"
     )
 
-# ---------------- HANDLE ----------------
+# ---------------- PHOTO ----------------
+@bot.message_handler(content_types=['photo'])
+def photo(m):
+    file_info = bot.get_file(m.photo[-1].file_id)
+    downloaded = bot.download_file(file_info.file_path)
+
+    path = "img.jpg"
+    with open(path, "wb") as f:
+        f.write(downloaded)
+
+    result = analyze_image(path)
+    bot.send_message(m.chat.id, "🖼 " + result)
+
+# ---------------- TEXT ----------------
 @bot.message_handler(func=lambda m: True)
 def handle(m):
-    bot.send_message(m.chat.id, reply(m.text))
+
+    text = m.text
+
+    eq = solve_eq(text)
+    if eq:
+        bot.send_message(m.chat.id, "🧠 " + eq)
+        return
+
+    math = calc(text)
+    if math is not None:
+        bot.send_message(m.chat.id, "🧮 " + str(math))
+        return
+
+    bot.send_message(m.chat.id, ai(text))
 
 bot.infinity_polling(skip_pending=True)
