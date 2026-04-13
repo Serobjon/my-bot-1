@@ -4,8 +4,6 @@ import telebot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
 TOKEN = os.getenv("TOKEN")
-AI_KEY = os.getenv("AI_KEY")
-
 bot = telebot.TeleBot(TOKEN)
 
 # ---------------- MENU ----------------
@@ -14,48 +12,39 @@ def menu():
     kb.add(KeyboardButton("🤖 AI"), KeyboardButton("ℹ️ Help"))
     return kb
 
-# ---------------- AI FUNCTION ----------------
+# ---------------- FREE AI (NO CREDIT) ----------------
 def ai_reply(text):
     try:
-        if not AI_KEY:
-            return "AI_KEY yo‘q 😔"
+        # FREE PUBLIC AI (no key needed)
+        url = "https://api.affiliateplus.xyz/api/chatbot"
 
-        url = "https://openrouter.ai/api/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {AI_KEY}",
-            "Content-Type": "application/json"
+        params = {
+            "message": text,
+            "botname": "AI",
+            "ownername": "user"
         }
 
-        data = {
-            # ✅ FREE MODEL (402 bermaydi)
-            "model": "meta-llama/llama-3-8b-instruct",
-            "messages": [{"role": "user", "content": text}]
-        }
-
-        r = requests.post(url, json=data, headers=headers, timeout=15)
+        r = requests.get(url, params=params, timeout=15)
 
         if r.status_code != 200:
-            return f"AI error 😔 ({r.status_code})"
+            return "AI hozir ishlamayapti 😔"
 
-        return r.json()["choices"][0]["message"]["content"]
+        return r.json().get("message", "AI javob yo‘q")
 
-    except Exception:
-        return "AI ishlamadi 😔"
+    except:
+        return "AI error 😔 lekin bot ishlayapti ✔️"
 
 # ---------------- START ----------------
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.send_message(
-        message.chat.id,
-        "Bot ishlayapti 🚀",
-        reply_markup=menu()
-    )
+    bot.send_message(message.chat.id, "Bot ishlayapti 🚀", reply_markup=menu())
 
-# ---------------- BUTTONS ----------------
+# ---------------- HELP ----------------
 @bot.message_handler(func=lambda m: m.text == "ℹ️ Help")
 def help_cmd(message):
-    bot.send_message(message.chat.id, "Savol yozing yoki AI tugmasini bosing 🤖")
+    bot.send_message(message.chat.id, "Savol yozing 🤖")
 
+# ---------------- AI BUTTON ----------------
 @bot.message_handler(func=lambda m: m.text == "🤖 AI")
 def ai_btn(message):
     bot.send_message(message.chat.id, "Savol yozing 🤖")
@@ -65,5 +54,4 @@ def ai_btn(message):
 def handle(message):
     bot.send_message(message.chat.id, ai_reply(message.text))
 
-# ---------------- RUN ----------------
 bot.infinity_polling(skip_pending=True)
