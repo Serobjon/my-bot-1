@@ -1,6 +1,6 @@
 import os
 import telebot
-from sympy import symbols, Eq, solve, sympify
+from sympy import symbols, Eq, solve, simplify
 
 TOKEN = os.getenv("TOKEN")
 bot = telebot.TeleBot(TOKEN)
@@ -16,32 +16,32 @@ def start(message):
         "Misollar:\n"
         "2+2\n"
         "x+5=10\n"
-        "x^2+5*x+6=0\n"
-        "x*(5+6)-x*(3+2)=20"
+        "x^2+5*x+6=0"
     )
 
-# ---------------- MATH ENGINE ----------------
-def solve_math(text):
+# ---------------- SOLVER ----------------
+def solve_text(text):
     try:
         text = text.replace("^", "**")
 
-        # 1️⃣ EQUATION (oddiy + kvadrat + murakkab)
+        # 1️⃣ TENGLAMA (kvadrat ham)
         if "=" in text:
             left, right = text.split("=")
-            eq = Eq(sympify(left), sympify(right))
+
+            eq = Eq(simplify(left), simplify(right))
             sol = solve(eq, x)
+
             return f"🧠 x = {sol}"
 
         # 2️⃣ NORMAL MATH
-        return f"🧮 {sympify(text)}"
+        return f"🧮 {simplify(text)}"
 
     except:
-        return "❌ Noto‘g‘ri misol"
+        return "❌ Xato misol"
 
 # ---------------- HANDLE ----------------
-@bot.message_handler(func=lambda message: True)
-def handle(message):
-    result = solve_math(message.text)
-    bot.send_message(message.chat.id, result)
+@bot.message_handler(func=lambda m: True)
+def handle(m):
+    bot.send_message(m.chat.id, solve_text(m.text))
 
 bot.infinity_polling(skip_pending=True)
