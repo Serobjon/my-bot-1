@@ -12,27 +12,29 @@ def menu():
     kb.add(KeyboardButton("🤖 AI"), KeyboardButton("ℹ️ Help"))
     return kb
 
-# ---------------- FREE AI (NO CREDIT) ----------------
+# ---------------- AI (STABLE FALLBACK SYSTEM) ----------------
 def ai_reply(text):
+    # 1-TRY (primary free API)
     try:
-        # FREE PUBLIC AI (no key needed)
         url = "https://api.affiliateplus.xyz/api/chatbot"
-
-        params = {
+        r = requests.get(url, params={
             "message": text,
             "botname": "AI",
             "ownername": "user"
-        }
+        }, timeout=10)
 
-        r = requests.get(url, params=params, timeout=15)
-
-        if r.status_code != 200:
-            return "AI hozir ishlamayapti 😔"
-
-        return r.json().get("message", "AI javob yo‘q")
-
+        if r.status_code == 200:
+            data = r.json()
+            if "message" in data:
+                return data["message"]
     except:
-        return "AI error 😔 lekin bot ishlayapti ✔️"
+        pass
+
+    # 2-TRY (backup simple response)
+    try:
+        return "🤖 Men hozir AI serverga ulanolmadim, lekin savolingizni oldim: " + text
+    except:
+        return "AI hozir ishlamayapti 😔"
 
 # ---------------- START ----------------
 @bot.message_handler(commands=['start'])
