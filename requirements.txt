@@ -1,2 +1,4 @@
 pyTelegramBotAPI
+sympy
 requests
+Pillow
