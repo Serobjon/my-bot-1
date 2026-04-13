@@ -12,17 +12,20 @@ def menu():
     kb.add(KeyboardButton("🤖 AI"), KeyboardButton("ℹ️ Help"))
     return kb
 
-# ---------------- AI (STABLE FALLBACK SYSTEM) ----------------
+# ---------------- AI SYSTEM (3 LEVEL) ----------------
 def ai_reply(text):
-    # 1-TRY (primary free API)
-    try:
-        url = "https://api.affiliateplus.xyz/api/chatbot"
-        r = requests.get(url, params={
-            "message": text,
-            "botname": "AI",
-            "ownername": "user"
-        }, timeout=10)
 
+    # 🔵 LEVEL 1 (Primary free API)
+    try:
+        r = requests.get(
+            "https://api.affiliateplus.xyz/api/chatbot",
+            params={
+                "message": text,
+                "botname": "AI",
+                "ownername": "user"
+            },
+            timeout=8
+        )
         if r.status_code == 200:
             data = r.json()
             if "message" in data:
@@ -30,11 +33,20 @@ def ai_reply(text):
     except:
         pass
 
-    # 2-TRY (backup simple response)
+    # 🟡 LEVEL 2 (simple fallback API)
     try:
-        return "🤖 Men hozir AI serverga ulanolmadim, lekin savolingizni oldim: " + text
+        r = requests.get(
+            "https://api.quotable.io/random",
+            timeout=5
+        )
+        if r.status_code == 200:
+            quote = r.json()
+            return f"🤖 AI hozir band, lekin mana javob:\n\n{quote['content']}"
     except:
-        return "AI hozir ishlamayapti 😔"
+        pass
+
+    # 🔴 LEVEL 3 (offline fallback - always works)
+    return f"🤖 Savolingiz qabul qilindi: {text}\n\nHozir AI serverlar band 😔"
 
 # ---------------- START ----------------
 @bot.message_handler(commands=['start'])
