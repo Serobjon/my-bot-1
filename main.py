@@ -1,3 +1,4 @@
+print("BOT STARTING...")
 import requests
 import os
 import telebot
