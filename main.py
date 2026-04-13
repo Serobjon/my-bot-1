@@ -17,9 +17,6 @@ def ai_reply(text):
     try:
         key = os.getenv("AI_KEY")
 
-        if not key:
-            return "AI_KEY yo‘q 😔"
-
         url = "https://openrouter.ai/api/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {key}",
@@ -62,8 +59,7 @@ def ai_btn(message):
 # ---------------- CHAT ----------------
 @bot.message_handler(func=lambda message: True)
 def handle(message):
-    javob = ai_reply(message.text)
-    bot.send_message(message.chat.id, javob)
+    bot.send_message(message.chat.id, ai_reply(message.text))
 
 # ---------------- RUN ----------------
 bot.infinity_polling(skip_pending=True)
