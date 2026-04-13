@@ -1,33 +1,32 @@
+import os
 import requests
+import telebot
+
+TOKEN = os.getenv("TOKEN")
+bot = telebot.TeleBot(TOKEN)
 
 def ai_reply(text):
-
-    # 1️⃣ API 1 (chatbot free)
     try:
         r = requests.get(
             "https://api.affiliateplus.xyz/api/chatbot",
-            params={
-                "message": text,
-                "botname": "AI",
-                "ownername": "user"
-            },
-            timeout=6
+            params={"message": text},
+            timeout=10
         )
         if r.status_code == 200:
-            data = r.json()
-            if "message" in data:
-                return data["message"]
+            return r.json().get("message", "AI javob yo‘q")
     except:
         pass
 
-    # 2️⃣ API 2 (public QA)
-    try:
-        r = requests.get("https://api.quotable.io/random", timeout=5)
-        if r.status_code == 200:
-            q = r.json()
-            return f"🤖 AI band, lekin mana javob:\n\n{q['content']}"
-    except:
-        pass
+    return "AI hozir ishlamayapti 😔"
 
-    # 3️⃣ API 3 (fallback har doim ishlaydi)
-    return f"🤖 Savolingiz: {text}\n\nHozir AI serverlar band, keyin qayta urinib ko‘ring 🙂"
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.send_message(message.chat.id, "Bot ishlayapti ✔️")
+
+# ⭐ ENG MUHIM QISM
+@bot.message_handler(func=lambda message: True)
+def handle(message):
+    reply = ai_reply(message.text)
+    bot.send_message(message.chat.id, reply)
+
+bot.infinity_polling(skip_pending=True)
