@@ -1,5 +1,9 @@
 import requests
 import os
+import telebot
+
+TOKEN = os.environ.get("TOKEN")
+bot = telebot.TeleBot(TOKEN)
 
 def ai_reply(text):
     try:
@@ -17,28 +21,18 @@ def ai_reply(text):
         }
 
         r = requests.post(url, json=data, headers=headers, timeout=20)
-
         return r.json()["choices"][0]["message"]["content"]
 
-    except:
+    except Exception as e:
         return "AI ishlamadi 😔"
-import os
-import telebot
-
-TOKEN = os.environ.get("TOKEN")
-bot = telebot.TeleBot(TOKEN)
 
 @bot.message_handler(commands=['start'])
 def start(message):
     bot.send_message(message.chat.id, "Bot 24/7 ishlayapti 🚀")
 
 @bot.message_handler(func=lambda message: True)
-def echo(message):
-    bot.send_message(message.chat.id, message.text)
+def handle(message):
+    javob = ai_reply(message.text)
+    bot.send_message(message.chat.id, javob)
 
 bot.infinity_polling(skip_pending=True)
-import os
-
-port = os.environ.get("PORT")
-if port:
-    bot.infinity_polling(skip_pending=True)
