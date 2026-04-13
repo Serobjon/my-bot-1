@@ -1,31 +1,34 @@
 import os
 import telebot
 import requests
-from sympy import symbols, Eq, solve
-from PIL import Image
-import io
 import base64
+from sympy import symbols, Eq, solve, simplify
 
 TOKEN = os.getenv("TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
 x = symbols('x')
 
-# ---------------- MATH (Qiyin tenglama) ----------------
+# ---------------- MATH ENGINE ----------------
 def solve_math(text):
     try:
         text = text.replace("^", "**")
 
         if "=" in text:
             left, right = text.split("=")
-            eq = Eq(eval(left), eval(right))
+
+            eq = Eq(simplify(left), simplify(right))
             sol = solve(eq, x)
+
             return f"🧠 x = {sol}"
+
+        # oddiy expression
+        return f"🧮 {simplify(text)}"
 
     except:
         return None
 
-# ---------------- AI ----------------
+# ---------------- AI CHAT (FREE) ----------------
 def ai(text):
     try:
         r = requests.get(
@@ -44,16 +47,17 @@ def ai(text):
 def image_ai(file_path):
     try:
         with open(file_path, "rb") as f:
-            img_b64 = base64.b64encode(f.read()).decode()
+            b64 = base64.b64encode(f.read()).decode()
 
         r = requests.post(
             "https://api.deepai.org/api/vision",
-            data={"image": "data:image/jpeg;base64," + img_b64},
+            data={"image": "data:image/jpeg;base64," + b64},
             timeout=10
         )
 
         if r.status_code == 200:
             return r.json().get("output", "🖼 Tahlil qilindi")
+
     except:
         pass
 
@@ -62,9 +66,10 @@ def image_ai(file_path):
 # ---------------- START ----------------
 @bot.message_handler(commands=['start'])
 def start(m):
-    bot.send_message(m.chat.id,
+    bot.send_message(
+        m.chat.id,
         "🚀 MAX AI BOT\n\n"
-        "🧠 Math\n🤖 AI\n🖼 Image"
+        "🧠 Algebra\n🧮 Math\n🤖 AI\n🖼 Image"
     )
 
 # ---------------- PHOTO ----------------
@@ -77,8 +82,8 @@ def photo(m):
     with open(path, "wb") as f:
         f.write(downloaded)
 
-    result = image_ai(path)
-    bot.send_message(m.chat.id, "🖼 " + result)
+    res = image_ai(path)
+    bot.send_message(m.chat.id, "🖼 " + res)
 
 # ---------------- TEXT ----------------
 @bot.message_handler(func=lambda m: True)
@@ -86,13 +91,13 @@ def handle(m):
 
     text = m.text
 
-    # math first
+    # 1️⃣ math/algebra first
     math = solve_math(text)
     if math:
         bot.send_message(m.chat.id, math)
         return
 
-    # AI second
+    # 2️⃣ AI second
     bot.send_message(m.chat.id, ai(text))
 
 bot.infinity_polling(skip_pending=True)
