@@ -4,6 +4,8 @@ import telebot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
 TOKEN = os.environ.get("TOKEN")
+AI_KEY = os.environ.get("AI_KEY")
+
 bot = telebot.TeleBot(TOKEN)
 
 # ---------------- MENU ----------------
@@ -15,27 +17,28 @@ def menu():
 # ---------------- AI ----------------
 def ai_reply(text):
     try:
-        key = os.getenv("AI_KEY")
+        if not AI_KEY:
+            return "AI_KEY yo‘q 😔"
 
         url = "https://openrouter.ai/api/v1/chat/completions"
         headers = {
-            "Authorization": f"Bearer {key}",
+            "Authorization": f"Bearer {AI_KEY}",
             "Content-Type": "application/json"
         }
 
         data = {
-            "model": "openai/gpt-4o-mini",
+            "model": "openai/gpt-3.5-turbo",
             "messages": [{"role": "user", "content": text}]
         }
 
         r = requests.post(url, json=data, headers=headers, timeout=15)
 
         if r.status_code != 200:
-            return "AI error 😔"
+            return f"AI error 😔 ({r.status_code})"
 
         return r.json()["choices"][0]["message"]["content"]
 
-    except:
+    except Exception:
         return "AI ishlamadi 😔"
 
 # ---------------- START ----------------
