@@ -1,79 +1,76 @@
 import os
 import telebot
-import requests
-from flask import Flask
-from threading import Thread
+import re
 
 TOKEN = os.getenv("TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
-# ---------------- WEB SERVER (KEEP ALIVE) ----------------
-app = Flask('')
-
-@app.route('/')
-def home():
-    return "Bot is alive!"
-
-def run():
-    app.run(host='0.0.0.0', port=10000)
-
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
-
-# ---------------- SAFE MATH ----------------
-def calc(text):
+# ---------------- BASIC MATH ----------------
+def safe_eval(expr):
     try:
-        text = text.replace("^", "**")
-        allowed = "0123456789+-*/(). "
-        for ch in text:
-            if ch not in allowed:
-                return None
-        return str(eval(text))
+        expr = expr.replace("^", "**")
+        allowed = "0123456789+-*/(). x="
+        if not all(c in allowed for c in expr):
+            return None
+        return eval(expr)
     except:
         return None
 
-# ---------------- AI ----------------
-def ai_reply(text):
-
-    # MATH
-    result = calc(text)
-    if result:
-        return f"🧮 Javob: {result}"
-
-    # FREE AI
+# ---------------- EQUATION SOLVER ----------------
+def solve_equation(text):
     try:
-        r = requests.get(
-            "https://api.affiliateplus.xyz/api/chatbot",
-            params={"message": text},
-            timeout=5
-        )
-        if r.status_code == 200:
-            return r.json().get("message", "")
-    except:
-        pass
+        # example: x + 5 = 10
+        if "=" not in text:
+            return None
 
-    # FALLBACK
-    return f"🤖 Menimcha siz: {text}"
+        left, right = text.split("=")
+        left = left.strip()
+        right = float(eval(right))
+
+        # simple form: ax + b
+        match = re.match(r"([0-9]*)x\s*([\+\-]?\s*\d+)?", left)
+
+        if match:
+            a = match.group(1)
+            b = match.group(2)
+
+            a = float(a) if a not in ["", None] else 1
+            b = float(b.replace(" ", "")) if b else 0
+
+            x = (right - b) / a
+            return f"x = {x}"
+
+    except:
+        return None
+
+# ---------------- AI / LOGIC ----------------
+def reply(text):
+
+    # 1️⃣ equation
+    eq = solve_equation(text)
+    if eq:
+        return "🧠 " + eq
+
+    # 2️⃣ normal math
+    math = safe_eval(text)
+    if math is not None:
+        return "🧮 " + str(math)
+
+    # 3️⃣ fallback
+    return "🤖 Men faqat matematikani yecha olaman. Misol: 2+2 yoki x+5=10"
 
 # ---------------- START ----------------
 @bot.message_handler(commands=['start'])
-def start(message):
-    bot.send_message(message.chat.id, "🤖 AI + Math bot ishlayapti!")
+def start(m):
+    bot.send_message(m.chat.id,
+        "🤖 Math Bot ishga tushdi!\n\n"
+        "🧮 Misollar: 2+2, 10/2\n"
+        "🧠 Tenglama: x+5=10"
+    )
 
-# ---------------- CHAT ----------------
-@bot.message_handler(func=lambda message: True)
-def handle(message):
-    try:
-        bot.send_message(message.chat.id, ai_reply(message.text))
-    except:
-        bot.send_message(message.chat.id, "Xatolik 😔")
+# ---------------- HANDLE ----------------
+@bot.message_handler(func=lambda m: True)
+def handle(m):
+    bot.send_message(m.chat.id, reply(m.text))
 
-# ---------------- RUN ----------------
-keep_alive()
-
-while True:
-    try:
-        bot.infinity_polling(skip_pending=True)
-    except Exception as e:
-        print("Restart:", e)
+bot.infinity_polling(skip_pending=True)
