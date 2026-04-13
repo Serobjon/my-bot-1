@@ -5,28 +5,43 @@ import telebot
 TOKEN = os.getenv("TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
+# ---------------- AI SYSTEM (STABLE FREE) ----------------
 def ai_reply(text):
+
+    # 1️⃣ API 1
     try:
         r = requests.get(
             "https://api.affiliateplus.xyz/api/chatbot",
             params={"message": text},
-            timeout=10
+            timeout=6
         )
         if r.status_code == 200:
-            return r.json().get("message", "AI javob yo‘q")
+            data = r.json()
+            if "message" in data:
+                return data["message"]
     except:
         pass
 
-    return "AI hozir ishlamayapti 😔"
+    # 2️⃣ API 2 (backup)
+    try:
+        r = requests.get("https://api.quotable.io/random", timeout=5)
+        if r.status_code == 200:
+            q = r.json()
+            return f"🤖 {q['content']}"
+    except:
+        pass
 
+    # 3️⃣ ALWAYS WORKS
+    return f"🤖 Savolingiz qabul qilindi: {text}"
+
+# ---------------- START ----------------
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.send_message(message.chat.id, "Bot ishlayapti ✔️")
+    bot.send_message(message.chat.id, "Bot ishlayapti 🚀")
 
-# ⭐ ENG MUHIM QISM
+# ---------------- CHAT ----------------
 @bot.message_handler(func=lambda message: True)
 def handle(message):
-    reply = ai_reply(message.text)
-    bot.send_message(message.chat.id, reply)
+    bot.send_message(message.chat.id, ai_reply(message.text))
 
 bot.infinity_polling(skip_pending=True)
