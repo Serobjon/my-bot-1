@@ -1,65 +1,55 @@
 import os
-import telebot
 import requests
+import telebot
 
-# ---------------- SAFE TOKEN LOAD ----------------
 TOKEN = os.getenv("TOKEN")
-
-if not TOKEN:
-    print("❌ TOKEN topilmadi!")
-    TOKEN = "0"
-
 bot = telebot.TeleBot(TOKEN)
 
-# ---------------- SAFE AI ----------------
+# ---------------- MATH CHECK ----------------
+def is_math(text):
+    ops = ["+", "-", "*", "/", "(", ")", "^"]
+    return any(op in text for op in ops)
+
+def calc_math(text):
+    try:
+        text = text.replace("^", "**")
+        return eval(text)
+    except:
+        return "Hisoblab bo‘lmadi ❌"
+
+# ---------------- AI ----------------
 def ai_reply(text):
 
-    # 🔵 1-URINISH (FREE API)
+    # 1️⃣ MATH PRIORITY
+    if is_math(text):
+        return f"🧮 Javob: {calc_math(text)}"
+
+    # 2️⃣ FREE AI
     try:
         r = requests.get(
             "https://api.affiliateplus.xyz/api/chatbot",
             params={"message": text},
             timeout=5
         )
-
         if r.status_code == 200:
-            data = r.json()
-            return data.get("message", "AI javob yo‘q")
-
-    except Exception as e:
-        print("AI error:", e)
-
-    # 🟡 2-FALLBACK
-    try:
-        return f"🤖 Men sizni tushundim: {text}"
+            return r.json().get("message", "")
     except:
         pass
 
-    # 🔴 FINAL SAFETY
-    return "🤖 Hozir tizim javob bera olmadi"
+    # 3️⃣ FALLBACK
+    return f"🤖 Men sizni tushundim: {text}"
 
 # ---------------- START ----------------
 @bot.message_handler(commands=['start'])
 def start(message):
-    try:
-        bot.send_message(message.chat.id, "Bot ishlayapti 🚀")
-    except Exception as e:
-        print("Start error:", e)
+    bot.send_message(message.chat.id, "Bot ishlayapti 🚀\nMatematikani ham yechaman 🧮")
 
 # ---------------- ALL MESSAGES ----------------
 @bot.message_handler(func=lambda message: True)
 def handle(message):
     try:
-        reply = ai_reply(message.text)
-        bot.send_message(message.chat.id, reply)
-    except Exception as e:
-        print("Handler error:", e)
+        bot.send_message(message.chat.id, ai_reply(message.text))
+    except:
+        bot.send_message(message.chat.id, "Xatolik bo‘ldi ❌")
 
-# ---------------- RUN SAFE ----------------
-print("Bot ishga tushdi ✔️")
-
-while True:
-    try:
-        bot.infinity_polling(skip_pending=True, timeout=10, long_polling_timeout=10)
-    except Exception as e:
-        print("Restarting bot due to error:", e)
+bot.infinity_polling(skip_pending=True)
