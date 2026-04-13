@@ -1,75 +1,59 @@
 import os
 import telebot
 import requests
-import re
+from sympy import symbols, Eq, solve
+from PIL import Image
+import io
 import base64
 
 TOKEN = os.getenv("TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
-# ---------------- MATH ----------------
-def calc(text):
+x = symbols('x')
+
+# ---------------- MATH (Qiyin tenglama) ----------------
+def solve_math(text):
     try:
         text = text.replace("^", "**")
-        allowed = "0123456789+-*/(). x="
-        if not all(c in allowed for c in text):
-            return None
-        return eval(text)
+
+        if "=" in text:
+            left, right = text.split("=")
+            eq = Eq(eval(left), eval(right))
+            sol = solve(eq, x)
+            return f"🧠 x = {sol}"
+
     except:
         return None
 
-# ---------------- EQUATION ----------------
-def solve_eq(text):
-    try:
-        if "=" not in text:
-            return None
-
-        left, right = text.split("=")
-        right = float(eval(right.strip()))
-
-        match = re.match(r"([0-9]*)x\s*([\+\-]?\s*\d+)?", left.strip())
-        if match:
-            a = match.group(1)
-            b = match.group(2)
-
-            a = float(a) if a not in ["", None] else 1
-            b = float(b.replace(" ", "")) if b else 0
-
-            x = (right - b) / a
-            return f"x = {x}"
-    except:
-        return None
-
-# ---------------- FREE AI ----------------
+# ---------------- AI ----------------
 def ai(text):
     try:
         r = requests.get(
             "https://api.affiliateplus.xyz/api/chatbot",
             params={"message": text},
-            timeout=5
+            timeout=6
         )
         if r.status_code == 200:
             return r.json().get("message", "")
     except:
         pass
 
-    return "🤖 Men sizni tushundim, lekin AI hozir band."
+    return "🤖 Hozir AI javob bera olmadi"
 
 # ---------------- IMAGE ANALYSIS ----------------
-def analyze_image(file_path):
+def image_ai(file_path):
     try:
-        with open(file_path, "rb") as img:
-            b64 = base64.b64encode(img.read()).decode()
+        with open(file_path, "rb") as f:
+            img_b64 = base64.b64encode(f.read()).decode()
 
-        # FREE demo vision API (not perfect but works)
         r = requests.post(
             "https://api.deepai.org/api/vision",
-            data={"image": "data:image/jpeg;base64," + b64},
+            data={"image": "data:image/jpeg;base64," + img_b64},
             timeout=10
         )
 
         if r.status_code == 200:
-            return r.json().get("output", "Rasm tahlil qilindi")
+            return r.json().get("output", "🖼 Tahlil qilindi")
     except:
         pass
 
@@ -78,9 +62,9 @@ def analyze_image(file_path):
 # ---------------- START ----------------
 @bot.message_handler(commands=['start'])
 def start(m):
-    bot.send_message(
-        m.chat.id,
-        "🚀 MAX BOT ishga tushdi!\n\n🧮 Math\n🧠 AI\n🖼 Image"
+    bot.send_message(m.chat.id,
+        "🚀 MAX AI BOT\n\n"
+        "🧠 Math\n🤖 AI\n🖼 Image"
     )
 
 # ---------------- PHOTO ----------------
@@ -93,7 +77,7 @@ def photo(m):
     with open(path, "wb") as f:
         f.write(downloaded)
 
-    result = analyze_image(path)
+    result = image_ai(path)
     bot.send_message(m.chat.id, "🖼 " + result)
 
 # ---------------- TEXT ----------------
@@ -102,16 +86,13 @@ def handle(m):
 
     text = m.text
 
-    eq = solve_eq(text)
-    if eq:
-        bot.send_message(m.chat.id, "🧠 " + eq)
+    # math first
+    math = solve_math(text)
+    if math:
+        bot.send_message(m.chat.id, math)
         return
 
-    math = calc(text)
-    if math is not None:
-        bot.send_message(m.chat.id, "🧮 " + str(math))
-        return
-
+    # AI second
     bot.send_message(m.chat.id, ai(text))
 
 bot.infinity_polling(skip_pending=True)
