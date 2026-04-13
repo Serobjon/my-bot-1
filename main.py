@@ -3,8 +3,9 @@ import requests
 import telebot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
-TOKEN = os.environ.get("TOKEN")
-AI_KEY = os.environ.get("AI_KEY")
+# ENV VARIABLES
+TOKEN = os.getenv("TOKEN")
+AI_KEY = os.getenv("AI_KEY")
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -14,12 +15,12 @@ def menu():
     kb.add(KeyboardButton("🤖 AI"), KeyboardButton("ℹ️ Help"))
     return kb
 
-# ---------------- AI ----------------
+# ---------------- AI FUNCTION ----------------
 def ai_reply(text):
-    try:
-        if not AI_KEY:
-            return "AI_KEY yo‘q 😔"
+    if not AI_KEY:
+        return "AI_KEY yo‘q 😔 (Render Environment tekshiring)"
 
+    try:
         url = "https://openrouter.ai/api/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {AI_KEY}",
@@ -31,7 +32,7 @@ def ai_reply(text):
             "messages": [{"role": "user", "content": text}]
         }
 
-        r = requests.post(url, json=data, headers=headers, timeout=15)
+        r = requests.post(url, json=data, timeout=15, headers=headers)
 
         if r.status_code != 200:
             return f"AI error 😔 ({r.status_code})"
@@ -50,7 +51,7 @@ def start(message):
         reply_markup=menu()
     )
 
-# ---------------- MENU BUTTONS ----------------
+# ---------------- BUTTONS ----------------
 @bot.message_handler(func=lambda m: m.text == "ℹ️ Help")
 def help_cmd(message):
     bot.send_message(message.chat.id, "Savol yozing yoki AI tugmasini bosing 🤖")
