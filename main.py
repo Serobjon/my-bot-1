@@ -3,7 +3,6 @@ import requests
 import telebot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
-# ENV VARIABLES
 TOKEN = os.getenv("TOKEN")
 AI_KEY = os.getenv("AI_KEY")
 
@@ -17,10 +16,10 @@ def menu():
 
 # ---------------- AI FUNCTION ----------------
 def ai_reply(text):
-    if not AI_KEY:
-        return "AI_KEY yo‘q 😔 (Render Environment tekshiring)"
-
     try:
+        if not AI_KEY:
+            return "AI_KEY yo‘q 😔"
+
         url = "https://openrouter.ai/api/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {AI_KEY}",
@@ -28,11 +27,12 @@ def ai_reply(text):
         }
 
         data = {
-            "model": "openai/gpt-3.5-turbo",
+            # ✅ FREE MODEL (402 bermaydi)
+            "model": "meta-llama/llama-3-8b-instruct",
             "messages": [{"role": "user", "content": text}]
         }
 
-        r = requests.post(url, json=data, timeout=15, headers=headers)
+        r = requests.post(url, json=data, headers=headers, timeout=15)
 
         if r.status_code != 200:
             return f"AI error 😔 ({r.status_code})"
